@@ -92,7 +92,7 @@
         }
 
         async function carregarLivros() {
-            const res = await fetch('http://localhost:3000/livros');
+            const res = await fetch('https://biblioteca-api-7iqo.onrender.com/livros');
             const livros = await res.json();
             document.getElementById('livrosBody').innerHTML = livros.map(l => `
                 <tr>
@@ -108,7 +108,7 @@
         }
 
         async function carregarMeusEmprestimos() {
-            const res = await fetch(`http://localhost:3000/emprestimos/leitor/${user.id}`);
+            const res = await fetch(`https://biblioteca-api-7iqo.onrender.com/emprestimos/leitor/${user.id}`);
             const emps = await res.json();
             document.getElementById('meusEmprestimosBody').innerHTML = emps.map(e => `
                 <tr>
@@ -129,7 +129,7 @@
         async function solicitarEmprestimo(livro_id) {
             const data_devolucao_prevista = prompt("Informe a data prevista para devolução (Formato AAAA-MM-DD):");
             if (data_devolucao_prevista) {
-                const res = await fetch('http://localhost:3000/emprestimos', {
+                const res = await fetch('https://biblioteca-api-7iqo.onrender.com/emprestimos', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ livro_id, leitor_id: user.id, data_devolucao_prevista, perfil: user.perfil })

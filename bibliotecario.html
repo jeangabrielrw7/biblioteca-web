@@ -115,7 +115,7 @@
         }
 
         async function carregarLivros() {
-            const res = await fetch('http://localhost:3000/livros');
+            const res = await fetch('https://biblioteca-api-7iqo.onrender.com/livros');
             const livros = await res.json();
             document.getElementById('livrosBody').innerHTML = livros.map(l => `
                 <tr>
@@ -133,7 +133,7 @@
         }
 
         async function carregarEmprestimos() {
-            const res = await fetch('http://localhost:3000/emprestimos');
+            const res = await fetch('https://biblioteca-api-7iqo.onrender.com/emprestimos');
             const emps = await res.json();
             document.getElementById('emprestimosBody').innerHTML = emps.map(e => `
                 <tr>
@@ -154,7 +154,7 @@
 
         document.getElementById('bookForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            await fetch('http://localhost:3000/livros', {
+            await fetch('https://biblioteca-api-7iqo.onrender.com/livros', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -175,7 +175,7 @@
             const ano_publicacao = prompt("Novo ano:", ano) || ano;
             const quantidade_disponivel = prompt("Nova quantidade disponível:", q) || q;
             
-            await fetch(`http://localhost:3000/livros/${id}`, {
+            await fetch(`https://biblioteca-api-7iqo.onrender.com/livros/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ titulo, autor, ano_publicacao, quantidade_disponivel, perfil: user.perfil })
@@ -185,7 +185,7 @@
 
         async function deletarLivro(id) {
             if(confirm("Tem certeza que deseja remover este livro?")) {
-                await fetch(`http://localhost:3000/livros/${id}`, {
+                await fetch(`https://biblioteca-api-7iqo.onrender.com/livros/${id}`, {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ perfil: user.perfil })
@@ -195,7 +195,7 @@
         }
 
         async function aprovarDevolucao(id) {
-            await fetch(`http://localhost:3000/emprestimos/${id}/devolucao`, {
+            await fetch(`https://biblioteca-api-7iqo.onrender.com/emprestimos/${id}/devolucao`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ perfil: user.perfil })

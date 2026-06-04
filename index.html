@@ -150,7 +150,7 @@
             e.preventDefault();
             const email = document.getElementById('logEmail').value;
             const senha = document.getElementById('logSenha').value;
-            const res = await fetch('http://localhost:3000/login', {
+            const res = await fetch('https://biblioteca-api-7iqo.onrender.com/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, senha })
@@ -170,7 +170,7 @@
             const email = document.getElementById('regEmail').value;
             const senha = document.getElementById('regSenha').value;
             const perfil = document.getElementById('regPerfil').value;
-            const res = await fetch('http://localhost:3000/register', {
+            const res = await fetch('https://biblioteca-api-7iqo.onrender.com/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nome, email, senha, perfil })
