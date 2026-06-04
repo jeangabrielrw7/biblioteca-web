@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Leitor</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #0284c7;
+            --primary-hover: #0369a1;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --bg: #f0f9ff;
+            --surface: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --border: #e0f2fe;
+        }
+
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); padding: 2rem; margin: 0; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        
+        .header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: var(--surface); padding: 1.5rem 2rem; border-radius: 12px; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 2rem; border-left: 5px solid var(--primary);
+        }
+        .header h2 { margin: 0; font-weight: 700; color: var(--text); }
+        
+        .card { 
+            background: var(--surface); padding: 2rem; border-radius: 12px; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 2rem; 
+        }
+        .card h3 { margin-top: 0; color: var(--primary); font-weight: 600; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; }
+        
+        button { background: var(--primary); color: white; padding: 0.65rem 1.25rem; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        button:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        button:active { transform: translateY(1px); }
+        button.danger { background: var(--danger); }
+        button.danger:hover { background: var(--danger-hover); }
+
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #f3f4f6; }
+        th { background-color: #f8fafc; color: var(--text-light); font-weight: 600; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.05em; }
+        tr:hover td { background-color: #f8fafc; }
+        
+        strong { background: var(--bg); color: var(--text); padding: 0.35rem 0.75rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        @media (max-width: 768px) {
+            .header { flex-direction: column; gap: 1rem; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Área do Leitor</h2>
+            <button class="danger" onclick="logout()">Sair da Conta</button>
+        </div>
+
+        <div class="card">
+            <h3>Catálogo de Livros Disponíveis</h3>
+            <div class="table-responsive">
+                <table>
+                    <thead><tr><th>Título da Obra</th><th>Autor</th><th>Ano</th><th>Disponibilidade</th><th>Ação</th></tr></thead>
+                    <tbody id="livrosBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Meus Empréstimos</h3>
+            <div class="table-responsive">
+                <table>
+                    <thead><tr><th>Livro Retirado</th><th>Data do Empréstimo</th><th>Previsão de Devolução</th><th>Status</th><th>Ação</th></tr></thead>
+                    <tbody id="meusEmprestimosBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user || user.perfil !== 'leitor') window.location.href = 'index.html';
+
+        function logout() {
+            localStorage.removeItem('user');
+            window.location.href = 'index.html';
+        }
+
+        async function carregarLivros() {
+            const res = await fetch('http://localhost:3000/livros');
+            const livros = await res.json();
+            document.getElementById('livrosBody').innerHTML = livros.map(l => `
+                <tr>
+                    <td style="font-weight: 600; color: #111827;">${l.titulo}</td>
+                    <td>${l.autor}</td>
+                    <td>${l.ano_publicacao || '-'}</td>
+                    <td><strong style="background: ${l.quantidade_disponivel > 0 ? '#dcfce7' : '#fee2e2'}; color: ${l.quantidade_disponivel > 0 ? '#166534' : '#991b1b'};">${l.quantidade_disponivel} unidade(s)</strong></td>
+                    <td>
+                        ${l.quantidade_disponivel > 0 ? `<button onclick="solicitarEmprestimo(${l.id})">Solicitar Livro</button>` : '<span style="color: #9ca3af; font-size: 0.9rem;">Indisponível</span>'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function carregarMeusEmprestimos() {
+            const res = await fetch(`http://localhost:3000/emprestimos/leitor/${user.id}`);
+            const emps = await res.json();
+            document.getElementById('meusEmprestimosBody').innerHTML = emps.map(e => `
+                <tr>
+                    <td style="font-weight: 600;">${e.titulo}</td>
+                    <td>${e.data_emprestimo.split('T')[0]}</td>
+                    <td>${e.data_devolucao_prevista.split('T')[0]}</td>
+                    <td><strong style="
+                        background: ${e.status === 'ativo' ? '#dbeafe' : e.status === 'atrasado' ? '#fee2e2' : '#f3f4f6'}; 
+                        color: ${e.status === 'ativo' ? '#1e40af' : e.status === 'atrasado' ? '#991b1b' : '#4b5563'};
+                    ">${e.status}</strong></td>
+                    <td>
+                        ${e.status === 'ativo' || e.status === 'atrasado' ? `<button style="background: #4b5563;" onclick="solicitarDevolucao()">Avisar Devolução</button>` : '<span style="color: #9ca3af; font-size: 0.9rem;">Entregue</span>'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function solicitarEmprestimo(livro_id) {
+            const data_devolucao_prevista = prompt("Informe a data prevista para devolução (Formato AAAA-MM-DD):");
+            if (data_devolucao_prevista) {
+                const res = await fetch('http://localhost:3000/emprestimos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ livro_id, leitor_id: user.id, data_devolucao_prevista, perfil: user.perfil })
+                });
+                if (res.ok) {
+                    alert("Empréstimo realizado com sucesso!");
+                    carregarLivros();
+                    carregarMeusEmprestimos();
+                } else {
+                    const data = await res.json();
+                    alert("Erro: " + data.error);
+                }
+            }
+        }
+
+        function solicitarDevolucao() {
+            alert('Aviso enviado ao bibliotecário. Por favor, entregue o livro no balcão físico para que a devolução seja processada no sistema.');
+        }
+
+        carregarLivros();
+        carregarMeusEmprestimos();
+    </script>
+</body>
+</html>

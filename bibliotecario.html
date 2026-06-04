@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Bibliotecário</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --warning: #f59e0b;
+            --success: #10b981;
+            --bg: #f3f4f6;
+            --surface: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --border: #e5e7eb;
+        }
+
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); padding: 2rem; margin: 0; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        .header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: var(--primary); padding: 1.5rem 2rem; border-radius: 12px; 
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2); margin-bottom: 2rem; color: white;
+        }
+        .header h2 { margin: 0; font-weight: 600; letter-spacing: -0.5px; }
+        
+        .card { 
+            background: var(--surface); padding: 2rem; border-radius: 12px; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 2rem; 
+        }
+        .card h3 { margin-top: 0; color: var(--text); font-weight: 600; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; }
+        
+        form { display: flex; gap: 1rem; flex-wrap: wrap; }
+        input { padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; font-family: inherit; outline: none; flex: 1; min-width: 200px; background: #f9fafb; transition: all 0.2s; }
+        input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        
+        button { background: var(--primary); color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        button:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        button:active { transform: translateY(1px); }
+        button.danger { background: var(--danger); }
+        button.danger:hover { background: var(--danger-hover); }
+        button.edit { background: var(--warning); color: #fff; }
+        button.edit:hover { background: #d97706; }
+        button.outline { background: transparent; border: 1px solid rgba(255,255,255,0.5); color: white; }
+        button.outline:hover { background: rgba(255,255,255,0.1); }
+
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background-color: #f9fafb; color: var(--text-light); font-weight: 600; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.05em; }
+        tr:hover td { background-color: #f9fafb; }
+        td button { padding: 0.4rem 0.8rem; font-size: 0.85rem; margin-right: 0.5rem; }
+        
+        strong { background: var(--bg); color: var(--text); padding: 0.35rem 0.75rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        @media (max-width: 768px) {
+            form { flex-direction: column; }
+            .header { flex-direction: column; gap: 1rem; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Painel de Administração | Bibliotecário</h2>
+            <button class="outline" onclick="logout()">Encerrar Sessão</button>
+        </div>
+
+        <div class="card">
+            <h3>Cadastrar Novo Livro</h3>
+            <form id="bookForm">
+                <input type="text" id="titulo" placeholder="Título da Obra" required>
+                <input type="text" id="autor" placeholder="Nome do Autor" required>
+                <input type="number" id="ano" placeholder="Ano de Publicação">
+                <input type="number" id="qtd" placeholder="Quantidade Disponível" required>
+                <button type="submit">Salvar Livro</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3>Gestão do Acervo</h3>
+            <div class="table-responsive">
+                <table>
+                    <thead><tr><th>ID</th><th>Título</th><th>Autor</th><th>Ano</th><th>Estoque</th><th>Ações</th></tr></thead>
+                    <tbody id="livrosBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Empréstimos Ativos e Histórico</h3>
+            <div class="table-responsive">
+                <table>
+                    <thead><tr><th>Leitor</th><th>Livro Emprestado</th><th>Data Retirada</th><th>Prazo de Devolução</th><th>Status Atual</th><th>Ações</th></tr></thead>
+                    <tbody id="emprestimosBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user || user.perfil !== 'bibliotecario') window.location.href = 'index.html';
+
+        function logout() {
+            localStorage.removeItem('user');
+            window.location.href = 'index.html';
+        }
+
+        async function carregarLivros() {
+            const res = await fetch('http://localhost:3000/livros');
+            const livros = await res.json();
+            document.getElementById('livrosBody').innerHTML = livros.map(l => `
+                <tr>
+                    <td>#${l.id}</td>
+                    <td style="font-weight: 500; color: #111827;">${l.titulo}</td>
+                    <td>${l.autor}</td>
+                    <td>${l.ano_publicacao || '-'}</td>
+                    <td><strong style="background: ${l.quantidade_disponivel > 0 ? '#d1fae5' : '#fee2e2'}; color: ${l.quantidade_disponivel > 0 ? '#065f46' : '#991b1b'};">${l.quantidade_disponivel}</strong></td>
+                    <td>
+                        <button class="edit" onclick="editarLivro(${l.id}, '${l.titulo}', '${l.autor}', ${l.ano_publicacao}, ${l.quantidade_disponivel})">Editar</button>
+                        <button class="danger" onclick="deletarLivro(${l.id})">Excluir</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function carregarEmprestimos() {
+            const res = await fetch('http://localhost:3000/emprestimos');
+            const emps = await res.json();
+            document.getElementById('emprestimosBody').innerHTML = emps.map(e => `
+                <tr>
+                    <td>${e.nome}</td>
+                    <td style="font-weight: 500;">${e.titulo}</td>
+                    <td>${e.data_emprestimo.split('T')[0]}</td>
+                    <td>${e.data_devolucao_prevista.split('T')[0]}</td>
+                    <td><strong style="
+                        background: ${e.status === 'ativo' ? '#dbeafe' : e.status === 'atrasado' ? '#fee2e2' : '#e5e7eb'}; 
+                        color: ${e.status === 'ativo' ? '#1e40af' : e.status === 'atrasado' ? '#991b1b' : '#374151'};
+                    ">${e.status}</strong></td>
+                    <td>
+                        ${e.status === 'ativo' || e.status === 'atrasado' ? `<button style="background: #10b981;" onclick="aprovarDevolucao(${e.id})">Confirmar Devolução</button>` : '<span style="color: #6b7280; font-size: 0.85rem;">Finalizado</span>'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        document.getElementById('bookForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await fetch('http://localhost:3000/livros', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    titulo: document.getElementById('titulo').value,
+                    autor: document.getElementById('autor').value,
+                    ano_publicacao: document.getElementById('ano').value,
+                    quantidade_disponivel: document.getElementById('qtd').value,
+                    perfil: user.perfil
+                })
+            });
+            document.getElementById('bookForm').reset();
+            carregarLivros();
+        });
+
+        async function editarLivro(id, t, a, ano, q) {
+            const titulo = prompt("Novo título:", t) || t;
+            const autor = prompt("Novo autor:", a) || a;
+            const ano_publicacao = prompt("Novo ano:", ano) || ano;
+            const quantidade_disponivel = prompt("Nova quantidade disponível:", q) || q;
+            
+            await fetch(`http://localhost:3000/livros/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ titulo, autor, ano_publicacao, quantidade_disponivel, perfil: user.perfil })
+            });
+            carregarLivros();
+        }
+
+        async function deletarLivro(id) {
+            if(confirm("Tem certeza que deseja remover este livro?")) {
+                await fetch(`http://localhost:3000/livros/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ perfil: user.perfil })
+                });
+                carregarLivros();
+            }
+        }
+
+        async function aprovarDevolucao(id) {
+            await fetch(`http://localhost:3000/emprestimos/${id}/devolucao`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ perfil: user.perfil })
+            });
+            carregarLivros();
+            carregarEmprestimos();
+        }
+
+        carregarLivros();
+        carregarEmprestimos();
+    </script>
+</body>
+</html>
